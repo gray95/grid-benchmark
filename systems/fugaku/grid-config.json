@@ -1,0 +1,19 @@
+{
+  "configs": [
+    {
+      "name": "cpu",
+      "env-script": "env-cpu.sh",
+      "commit": "c1ea017f3df2840205ce418184daf501f306f598",
+      "config-options": "--enable-comms=mpi3 --enable-simd=A64FX --enable-shm=shmget --host=aarch64-linux-gnu --build=x86_64-linux-gnu --enable-fjmpi=yes",
+      "env": {
+        "CXX": "mpiclang++",
+        "CC": "mpiclang",
+        "CXXFLAGS": "-Wno-unused-command-line-argument",
+        "LDFLAGS": "${A64FX_LDFLAGS}"
+      },
+      "pixi-env": "cpu-a64fx",
+      "pixi-platform": "linux-aarch64",
+      "pixi-extra-envs": ["a64fx-toolchain"]
+    }
+  ]
+}

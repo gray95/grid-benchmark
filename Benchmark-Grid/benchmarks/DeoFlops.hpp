@@ -39,6 +39,14 @@ void update_representation<DWFSp4TwoIndexASInfo::Action>(
 
 namespace Benchmark
 {
+  // Wilson kernel selected on the command line (--dslash-asm, --dslash-unroll, --dslash-generic); main() records it
+  // after Grid_init, before the benchmarks below change WilsonKernelsStatic::Opt
+  inline int &DslashOpt(void)
+  {
+    static int opt = WilsonKernelsStatic::OptGeneric;
+    return opt;
+  }
+
   template<typename Action>
   static double DeoFlops(int Ls, int L, Grid::Coordinate pattern)
   {
@@ -72,6 +80,11 @@ namespace Benchmark
     typedef typename GroupInfo::group Group;
     constexpr const char* groupFamily = GroupInfo::groupName;
     constexpr int Nc = ActionInfo::Nc;
+    // the hand-written Wilson kernels exist for SU(3) in the fundamental representation only: other groups and
+    // representations, and the staggered operator, always use the generic kernel
+    constexpr bool handKernels = Nc == 3 && Representation::isFundamental &&
+                                 std::is_base_of_v<WilsonKernelsStatic, typename Action::Kernels>;
+    const int opt = handKernels ? DslashOpt() : Action::Kernels::OptGeneric;
 
     std::cout << GridLogMessage << "Benchmark " << groupFamily << "(" << Nc << ") "
               << ActionInfo::name() << " on " << L << "^4 local volume "
@@ -213,16 +226,18 @@ namespace Benchmark
       pickCheckerboard(Odd, src_o, src);
 
       const int num_cases = 4;
-      std::string fmt("G/S/C ; G/O/C ; G/S/S ; G/O/S ");
+      // kernel: G generic, H hand-unrolled, A assembly/intrinsics
+      const std::string k = (opt == Action::Kernels::OptInlineAsm) ? "A" : (opt == Action::Kernels::OptHandUnroll) ? "H" : "G";
+      std::string fmt(k + "/S/C ; " + k + "/O/C ; " + k + "/S/S ; " + k + "/O/S ");
 
       controls Cases[] = {
-          {Action::Kernels::OptGeneric, Action::Kernels::CommsThenCompute,
+          {opt, Action::Kernels::CommsThenCompute,
            CartesianCommunicator::CommunicatorPolicyConcurrent},
-          {Action::Kernels::OptGeneric, Action::Kernels::CommsAndCompute,
+          {opt, Action::Kernels::CommsAndCompute,
            CartesianCommunicator::CommunicatorPolicyConcurrent},
-          {Action::Kernels::OptGeneric, Action::Kernels::CommsThenCompute,
+          {opt, Action::Kernels::CommsThenCompute,
            CartesianCommunicator::CommunicatorPolicySequential},
-          {Action::Kernels::OptGeneric, Action::Kernels::CommsAndCompute,
+          {opt, Action::Kernels::CommsAndCompute,
            CartesianCommunicator::CommunicatorPolicySequential}};
 
       for (int c = 0; c < num_cases; c++)
@@ -235,6 +250,10 @@ namespace Benchmark
         grid_small_sep();
         if (Action::Kernels::Opt == Action::Kernels::OptGeneric)
           std::cout << GridLogMessage << "* Using GENERIC Nc " << getClassName<typename Action::Kernels>() << std::endl;
+        if (Action::Kernels::Opt == Action::Kernels::OptHandUnroll)
+          std::cout << GridLogMessage << "* Using Nc=3 HANDUNROLL " << getClassName<typename Action::Kernels>() << std::endl;
+        if (Action::Kernels::Opt == Action::Kernels::OptInlineAsm)
+          std::cout << GridLogMessage << "* Using ASM " << getClassName<typename Action::Kernels>() << std::endl;
         if (Action::Kernels::Comms == Action::Kernels::CommsAndCompute)
           std::cout << GridLogMessage << "* Using Overlapped Comms/Compute" << std::endl;
         if (Action::Kernels::Comms == Action::Kernels::CommsThenCompute)

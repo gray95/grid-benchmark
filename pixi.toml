@@ -63,6 +63,28 @@ clangdev = "19.*"
 libclang = "19.*"
 llvm-openmp = "19.*"
 
+# Fujitsu A64FX (Fugaku): the Grid dependencies for the compute nodes are installed from
+# the x86 login node (packages are only extracted there), and an x86 clang cross-compiles
+# against them (see systems/fugaku)
+[feature.a64fx]
+platforms = ["linux-aarch64"]
+
+[feature.a64fx.dependencies]
+hdf5 = "1.14.*"
+llvm-openmp = "23.*"
+
+[feature.a64fx-toolchain]
+platforms = ["linux-64"]
+
+[feature.a64fx-toolchain.dependencies]
+clang = "23.*"
+clangxx = "23.*"
+lld = "23.*"
+llvm-tools = "23.*"
+sysroot_linux-aarch64 = "2.28.*"
+libgcc-devel_linux-aarch64 = "16.*"
+libstdcxx-devel_linux-aarch64 = "16.*"
+
 [feature.grid.dependencies]
 openssl = "*"
 gmp = "*"
@@ -77,3 +99,5 @@ gpu-nvidia-x86 = ["default", "grid", "cuda", "linux", "x86"]
 gpu-amd = ["default", "grid", "rocm", "linux"]
 cpu-linux = ["default", "grid", "llvm20", "linux"]
 cpu-apple-silicon = ["default", "grid", "llvm19", "apple-silicon"]
+cpu-a64fx = { features = ["grid", "a64fx"], no-default-feature = true }
+a64fx-toolchain = { features = ["a64fx-toolchain"], no-default-feature = true }

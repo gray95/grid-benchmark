@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# A64FX cross-compiler wrapper: clang from the 'a64fx-toolchain' Pixi environment (x86
+# host) and the system Fujitsu MPI. Installed as a64fx-clang, a64fx-clang++, mpiclang and
+# mpiclang++, the behaviour follows the name.
+bin_dir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+case "$(basename "$0")" in
+  mpiclang)
+    tcsds="$(dirname "$(dirname "$(command -v mpifccpx)")")"
+    OMPI_CC="${bin_dir}/a64fx-clang" exec mpifccpx "$@" -L"${tcsds}/lib64";;
+  mpiclang++)
+    tcsds="$(dirname "$(dirname "$(command -v mpiFCCpx)")")"
+    OMPI_CXX="${bin_dir}/a64fx-clang++" exec mpiFCCpx "$@" -L"${tcsds}/lib64";;
+  a64fx-clang)   cc='clang';;
+  a64fx-clang++) cc='clang++';;
+  *) echo "error: unknown wrapper name '$(basename "$0")'" 1>&2; exit 1;;
+esac
+tc="${bin_dir}/.pixi/envs/a64fx-toolchain"
+a64fx="${bin_dir}/.pixi/envs/cpu-a64fx"
+fjdevkit='/opt/FJSVxos/devkit/aarch64/rfs'
+# -msve-vector-bits=512: fixed-length SVE (Grid's A64FX SIMD needs it)
+flags=(--target=aarch64-conda-linux-gnu -mcpu=a64fx -msve-vector-bits=512
+       --sysroot="${tc}/aarch64-conda-linux-gnu/sysroot" --gcc-toolchain="${tc}")
+# rpath-link: the Fujitsu MPI libraries depend on system libraries from the devkit
+link=(-fuse-ld=lld '-Wl,--disable-new-dtags' -L"${a64fx}/lib"
+      "-Wl,-rpath-link,${a64fx}/lib"
+      "-Wl,-rpath-link,${fjdevkit}/usr/lib64" "-Wl,-rpath-link,${fjdevkit}/lib64")
+for arg in "$@"; do
+  case "${arg}" in -c|-E|-S|-M|-MM) link=(); break;; esac
+done
+exec "${tc}/bin/${cc}" "${flags[@]}" "${link[@]}" "$@"

@@ -161,6 +161,7 @@ void printUsage()
   std::cout<<GridLogMessage<<"  --no-check-wilson            : Disable Wilson Fermion correctness check."<<std::endl;
   std::cout<<GridLogMessage<<"  --pattern <x.y.z.t>          : Scales the local lattice dimensions by the factors in the string x.y.z.t."<<std::endl;
   std::cout<<GridLogMessage<<"  --max-L                      : Sets the maximum lattice size for the flops benchmarks. This must decompose to 2^n 3^m, for n>0 and m={0,1}."<<std::endl;
+  std::cout<<GridLogMessage<<"                                 Values below 32 are allowed (minimum 8) but give no comparison point."<<std::endl;
   std::cout<<GridLogMessage<<std::endl;
   std::cout<<GridLogMessage<<std::endl;
   std::cout<<GridLogMessage<<"See below for Grid usage."<<std::endl;
@@ -180,6 +181,7 @@ int main(int argc, char **argv)
     }
   }
   Grid_init(&argc, &argv);
+  Benchmark::DslashOpt() = WilsonKernelsStatic::Opt;
 
   bool do_su4 = true;
   bool do_memory = true;
@@ -300,9 +302,9 @@ int main(int argc, char **argv)
       }
 
       // Check limits on L
-      if (maxL < 32)
+      if (maxL < 8)
       {
-        std::cerr << GridLogError << "--max-L must be at least 32" << std::endl;
+        std::cerr << GridLogError << "--max-L must be at least 8" << std::endl;
         exit(EXIT_FAILURE);
       }
     }
@@ -326,23 +328,24 @@ int main(int argc, char **argv)
     if (curL * 3 <= maxL)
       L_list.push_back(curL * 3);
   }
+  // below the default maximum, keep only the volumes up to maxL
+  while (L_list.size() > 1 && L_list.back() > maxL)
+    L_list.pop_back();
+  // the comparison point needs the L = 24 and L = 32 results
+  bool do_comparison_point = (maxL >= 32);
 
   // Error check: make sure input maxL is a member of the local
   // volume list.
   if (L_list.back() != maxL)
   {
-    int lowerL, higherL;
-    if (L_list.size() % 2) // 2^n*2 < L < 2^n*3
+    // valid sizes in increasing order: 8, 12, 16, 24, 32, 48, ...
+    int lowerL = L_list.back(), higherL = 0;
+    for (int curL = 4; higherL == 0; curL *= 2)
     {
-      int refL = L_list[L_list.size() - 3];
-      lowerL = refL * 2;
-      higherL = refL * 3;
-    }
-    else // 2^n*3 < L < 2^(n+1)*2
-    {
-      int refL = L_list[L_list.size() - 4];
-      lowerL = refL * 3;
-      higherL = refL * 4;
+      if (curL * 2 > maxL)
+        higherL = curL * 2;
+      else if (curL * 3 > maxL)
+        higherL = curL * 3;
     }
 
     std::cout
@@ -527,14 +530,24 @@ int main(int argc, char **argv)
     }
 
     grid_big_sep();
-    std::cout << GridLogMessage
-              << " Comparison point     result: " << 0.5 * (dwf4_fp32[sel] + dwf4_fp32[selm1]) / NN
-              << " Gflop/s per node" << std::endl;
-    std::cout << GridLogMessage << " Comparison point is 0.5*(" << dwf4_fp32[sel] / NN << "+"
-              << dwf4_fp32[selm1] / NN << ") " << std::endl;
+    if (do_comparison_point)
+    {
+      std::cout << GridLogMessage
+                << " Comparison point     result: " << 0.5 * (dwf4_fp32[sel] + dwf4_fp32[selm1]) / NN
+                << " Gflop/s per node" << std::endl;
+      std::cout << GridLogMessage << " Comparison point is 0.5*(" << dwf4_fp32[sel] / NN << "+"
+                << dwf4_fp32[selm1] / NN << ") " << std::endl;
+    }
+    else
+    {
+      std::cout << GridLogWarning << " Comparison point     result: not available, --max-L " << maxL
+                << " is below 32 (the comparison point averages the L=24 and L=32 results)"
+                << std::endl;
+    }
     std::cout << std::setprecision(3);
     grid_big_sep();
-    tmp_flops["comparison_point_Gflops"] = 0.5 * (dwf4_fp32[sel] + dwf4_fp32[selm1]) / NN;
+    if (do_comparison_point)
+      tmp_flops["comparison_point_Gflops"] = 0.5 * (dwf4_fp32[sel] + dwf4_fp32[selm1]) / NN;
     json_results["flops"] = tmp_flops;
   }
 

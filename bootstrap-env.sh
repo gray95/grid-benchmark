@@ -52,9 +52,17 @@ cp "${script_dir}/systems/${sys}/files"/* "${dir}"
 cp "${script_dir}/systems/${sys}/grid-config.json" "${dir}"
 
 echo "-- install system specific environment(s) (system: ${sys})"
-for e in $(jq -r '.configs[]."pixi-env"' "${dir}/grid-config.json"); do
-  echo "* install environment '${e}'"
-  $pixi_log install -e "${e}"
+ncfg=$(jq '.configs|length' "${dir}/grid-config.json")
+for (( i=0; i<ncfg; i++ )); do
+  cfg=$(jq ".configs[${i}]" "${dir}/grid-config.json")
+  e=$(echo "${cfg}" | jq -r '."pixi-env"')
+  p=$(echo "${cfg}" | jq -r '."pixi-platform" // empty')
+  echo "* install environment '${e}'${p:+ (platform ${p})}"
+  $pixi_log install -e "${e}" ${p:+--platform "${p}"}
+  for x in $(echo "${cfg}" | jq -r '."pixi-extra-envs" // [] | .[]'); do
+    echo "* install environment '${x}'"
+    $pixi_log install -e "${x}"
+  done
 done
 
 echo "-- install C-LIME"

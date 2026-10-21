@@ -47,6 +47,8 @@ elements of the form
     "VAR": "value"        // export VAR="value" before building
   }
   "pixi-env": "..."       // Pixi environment to use for this configuration
+  "pixi-platform": "..."  // (optional) platform of the Pixi environment, when cross-compiling
+  "pixi-extra-envs": []   // (optional) additional Pixi environments to install
 }
 ```
 Grid's dependencies are managed with [Pixi](https://pixi.sh/latest/) environments defined
@@ -55,6 +57,8 @@ in the [`pixi.toml`](pixi.toml) file. The following environments are available:
 - `gpu-amd`: AMD GPU Linux build
 - `cpu-linux`: CPU Linux build with LLVM
 - `cpu-apple-silicon`: Apple Silicon build on macOS
+- `cpu-a64fx`: Fujitsu A64FX build, cross-compiled from an x86 login node with the
+  `a64fx-toolchain` environment (Fugaku, see [`systems/fugaku`](systems/fugaku))
 and one of these strings must be used as a value for `"pixi-env"` above.
 
 Please refer to [Grid's repository](https://github.com/paboyle/Grid) 
@@ -163,7 +167,7 @@ Flag | Result
 --check-wilson               | Enable Wilson Fermion correctness check (default=on).
 --no-check-wilson            | Disable Wilson Fermion correctness check.
 --pattern \<x.y.z.t\>        | Scales the local lattice dimensions by the factors in the string x.y.z.t. This allows the volume-per-node to be matched between systems with dfferent GPUs-per-node if desired.
---max-L \<size\>             | Sets the maximum lattice size for the flops benchmarks. This must either be a power of 2, or 3 times a power of 2.
+--max-L \<size\>             | Sets the maximum lattice size for the flops benchmarks. This must either be a power of 2, or 3 times a power of 2. Values below the default (32) give no comparison point.
 
 It is intended that only the `--json-out` flag should be necessary for standard use cases of the benchmark. The 
 benchmarks are performed on a fixed set of problem sizes, and the Grid flag `--grid` will
@@ -243,7 +247,9 @@ Wilson, domain-wall, and staggered are not able to be disabled.
 
 The double-precision versions of the benchmarks can be disabled with `--no-benchmark-fp64`.
 
-For devices with large amounts of dedicated memory, it is possible to run the benchmark for additional problem sizes with the `--max-L <maximum size>` flag. Note that the maximum size *must* either be 2<sup>n</sup> or 3*2<sup>n</sup>. Since the default maximum size is 32 (the **minimum** acceptable `--max-L`) the next possible value is 48. The next highest and lowest valid values will be reported if an invalid value is entered.
+For devices with large amounts of dedicated memory, it is possible to run the benchmark for additional problem sizes with the `--max-L <maximum size>` flag. Note that the maximum size *must* either be 2<sup>n</sup> or 3*2<sup>n</sup>. Since the default maximum size is 32, the next possible value is 48. The next highest and lowest valid values will be reported if an invalid value is entered.
+
+For devices with too little memory for the default sizes, `--max-L` can also be set below 32 (to 24, 16, 12 or 8), which removes the larger sizes from the list. The comparison point averages the FP32 domain-wall results at L = 24 and 32, so it is then not computed: a warning is printed in its place and `comparison_point_Gflops` is absent from the JSON output. All other results, including the summary tables, are unchanged.
 
 In the `"flops"`
 and `"results"` sections of the JSON output the best performances are recorded, e.g.:
