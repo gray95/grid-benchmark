@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-module purge
 module load mpi/openmpi/4.1.6
 module load compiler/gnu/11/3.0;
 module load CUDA/11.7
