@@ -11,6 +11,32 @@
         "CXXFLAGS": "-std=c++17 -mfma"
       },
       "pixi-env": "cpu-linux"
+    },
+    {
+      "name": "gpu-a100",
+      "env-script": "env-gpu-a100.sh",
+      "commit": "3232b438f2cf729e515c185e2dbf29d7cc276bb7",
+      "config-options": "--enable-debug --enable-comms=mpi-auto --enable-shm=nvlink --enable-accelerator=cuda --enable-gen-simd-width=64 --enable-simd=GPU --enable-alloc-align=4k --disable-unified",
+      "env": {
+        "CXX": "nvcc",
+        "MPICXX": "mpicxx",
+        "LDFLAGS": "-cudart shared -lcublas",
+        "CXXFLAGS": "-ccbin mpicxx -gencode arch=compute_80,code=sm_80 -std=c++17 -cudart shared --diag-suppress 177,550,611"
+      },
+      "pixi-env": "gpu-nvidia"
+    },
+    {
+      "name": "gpu-h100",
+      "env-script": "env-gpu-h100.sh",
+      "commit": "3232b438f2cf729e515c185e2dbf29d7cc276bb7",
+      "config-options": "--enable-debug --enable-comms=mpi-auto --enable-shm=nvlink --enable-accelerator=cuda --enable-gen-simd-width=64 --enable-simd=GPU --enable-alloc-align=4k --disable-unified",
+      "env": {
+        "CXX": "nvcc",
+        "MPICXX": "mpicxx",
+        "LDFLAGS": "-cudart shared -lcublas",
+        "CXXFLAGS": "-ccbin mpicxx -gencode arch=compute_90,code=sm_90 -std=c++17 -cudart shared"
+      },
+      "pixi-env": "gpu-nvidia"
     }
   ]
 }
