@@ -1,30 +1,29 @@
 {
   "configs": [
     {
-      "name": "gpu",
-      "env-script": "env-gpu.sh",
-      "commit": "3232b438f2cf729e515c185e2dbf29d7cc276bb7",
-      "config-options": "--enable-comms=mpi-auto --enable-shm=nvlink --enable-accelerator=cuda --enable-gen-simd-width=64 --enable-simd=GPU --enable-alloc-align=4k --disable-unified --without-unwind",
-      "env": {
-        "CXX": "nvcc",
-        "MPICXX": "mpicxx",
-        "LDFLAGS": "-cudart shared -lcublas -L$GRID_DEP/lib",
-        "CXXFLAGS": "-ccbin mpicxx -gencode arch=compute_80,code=sm_80 -std=c++17 -cudart shared --diag-suppress 177,550,611 -I$GRID_DEP/include"
-      },
-      "pixi-env": "gpu-nvidia"
-    },
-    {
       "name": "cpu",
       "env-script": "env-cpu.sh",
       "commit": "3232b438f2cf729e515c185e2dbf29d7cc276bb7",
-      "config-options": "--enable-comms=mpi-auto --enable-accelerator=none --enable-simd=AVX512 --enable-alloc-align=4k --enable-shm=shmget",
+      "config-options": "--enable-debug --enable-comms=mpi-auto --enable-accelerator=none --enable-simd=AVX512 --enable-alloc-align=4k",
       "env": {
         "CXX": "g++",
         "MPICXX": "mpicxx",
-        "CXXFLAGS": "-std=c++17 -mfma -I$GRID_DEP/include",
-        "LDFLAGS": "-L$GRID_DEP/lib"
+        "CXXFLAGS": "-std=c++17 -mfma"
       },
       "pixi-env": "cpu-linux"
+    },
+    {
+      "name": "gpu-a100",
+      "env-script": "env-gpu.sh",
+      "commit": "3232b438f2cf729e515c185e2dbf29d7cc276bb7",
+      "config-options": "--enable-debug --enable-comms=mpi-auto --enable-shm=nvlink --enable-accelerator=cuda --enable-gen-simd-width=64 --enable-simd=GPU --enable-alloc-align=4k --disable-unified --without-unwind",
+      "env": {
+        "CXX": "nvcc",
+        "MPICXX": "mpicxx",
+        "LDFLAGS": "-cudart shared -lcublas",
+        "CXXFLAGS": "-ccbin mpicxx -gencode arch=compute_80,code=sm_80 -std=c++17 -cudart shared"
+      },
+      "pixi-env": "gpu-nvidia"
     }
   ]
 }
