@@ -34,7 +34,7 @@
         "CXX": "nvcc",
         "MPICXX": "mpicxx",
         "LDFLAGS": "-cudart shared -lcublas",
-        "CXXFLAGS": "-ccbin mpicxx -gencode arch=compute_90,code=sm_90 -std=c++17 -cudart shared"
+        "CXXFLAGS": "-ccbin mpicxx -gencode arch=compute_90,code=sm_90 -std=c++17 -cudart shared --compiler-options -DEIGEN_DONT_VECTORIZE"
       },
       "pixi-env": "gpu-nvidia"
     }
